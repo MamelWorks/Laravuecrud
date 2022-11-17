@@ -38,7 +38,7 @@ export default {
             },
             error => {
                 console.log(error.response);
-                this.$toast.info(error.response.data.message);
+                this.$toast.error(error.response.data.message);
                 throw error;
             });
     }
