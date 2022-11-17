@@ -13,6 +13,7 @@ $ git clone https://github.com/MamelWorks/Laravuecrud.git
 $ docker-compose up -d
 $ docker-compose exec app rm -rf vendor composer.lock
 $ docker-compose exec app composer install
+$ docker-compose exec app php artisan migrate
 ```
 
 
