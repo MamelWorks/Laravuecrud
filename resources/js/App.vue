@@ -38,7 +38,8 @@ export default {
             },
             error => {
                 console.log(error.response);
-                this.$toast.error(error.response.data.message);
+                if (error.response.status !== 422)
+                    this.$toast.error(error.response.data.message);
                 throw error;
             });
     }

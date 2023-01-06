@@ -8,24 +8,24 @@ use Illuminate\Http\Request;
 
 class UserGroupController extends Controller
 {
-    public function index($id)
+    public function index($uuid)
     {
-        $user = User::find($id);
+        $user = User::where('uuid',$uuid)->first();
         $groups = $user->groups()->get();
         return response()->json($groups);
     }
-    public function update($userId, $groupId)
+    public function update($userUuid, $groupUuid)
     {
-        $user = User::find($userId);
-        $group = Group::find($groupId);
-        $user->groups()->attach($groupId);
+        $user = User::where('uuid',$userUuid)->first();
+        $group = Group::where('uuid',$groupUuid)->first();
+        $user->groups()->attach($group->id);
         return response()->json('The user '. $user->name .' has been added to a group  '. $group->name);
     }
-    public function destroy($userId, $groupId)
+    public function destroy($userUuid, $groupUuid)
     {
-        $user = User::find($userId);
-        $group = Group::find($groupId);
-        $user->groups()->detach($groupId);
-        return response()->json('The user '. $user->name .' has been kicked from a group  '. $group->name);
+        $user = User::where('uuid',$userUuid)->first();
+        $group = Group::where('uuid',$groupUuid)->first();
+        $user->groups()->detach($group->id);
+        return response()->json('The user '. $user->name .' has been removed from a group  '. $group->name);
     }
 }

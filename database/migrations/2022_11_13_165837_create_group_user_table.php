@@ -14,10 +14,10 @@ return new class extends Migration
     public function up()
     {
         Schema::create('group_user', function (Blueprint $table) {
-            $table->id();
             $table->timestamps();
-            $table->integer('user_id');
-            $table->integer('group_id');
+            $table->foreignId('user_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('group_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
+            $table->primary(['user_id', 'group_id']);
         });
     }
 

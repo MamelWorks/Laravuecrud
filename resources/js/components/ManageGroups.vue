@@ -16,8 +16,8 @@
                 content-class="mt-3">
             <b-tab active title="Inspect">
                 <b-card>
-                    <div>Selected group:</div>
-                    <div>Id: {{ selected.id }}</div>
+                    <h3>Selected group:</h3>
+                    <div>Uuid: {{ selected.uuid }}</div>
                     <div>Name: {{ selected.name }}</div>
                     <div> Users:</div>
                     <li v-for="(item) in groupUsers">
@@ -35,9 +35,18 @@
                                     v-model="form.name"
                                     placeholder="Enter name"
                                     required
+                                    @input="v$.form.name.$touch()"
                                 ></b-form-input>
+                                <b-form-invalid-feedback force-show="true"
+                                                         v-for="(error, index) of v$.form.name.$errors" :key="index">
+                                    {{ error.$message }}
+                                </b-form-invalid-feedback>
+                                <b-form-invalid-feedback force-show="true"
+                                                         v-for="(error, index) of responseErrors.name" :key="index">
+                                    {{ error }}
+                                </b-form-invalid-feedback>
                             </b-form-group>
-                            <b-button type="submit" variant="primary">Edit</b-button>
+                            <b-button :disabled="v$.form.$invalid" type="submit" variant="primary">Edit</b-button>
                         </b-form>
                     </div>
                 </b-card>
@@ -54,14 +63,23 @@
 </template>
 
 <script>
+import useVuelidate from "@vuelidate/core";
+import {maxLength, minLength, required} from "@vuelidate/validators";
+
 export default {
+    setup () {
+        return { v$: useVuelidate() }
+    },
     data() {
         return {
             groups: [],
             fields: ['name'],
             showSelectableField: false,
             selected: [],
-            form: [],
+            form: {
+                name: ''
+            },
+            responseErrors: {},
             isHidden: true,
             groupUsers: []
         }
@@ -83,11 +101,15 @@ export default {
             this.isHidden = true;
         },
         updateGroup() {
+            self = this
             this.axios
-                .patch(`/api/groups/${this.form.id}`, this.form)
+                .patch(`/api/groups/${this.form.uuid}`, this.form)
                 .then(() => {
                     this.updateGroupList();
-            })
+                    self.responseErrors = {}
+                }).catch(function (error) {
+                if (error.response.status === 422)
+                    self.responseErrors = error.response.data.errors})
 
         },
         updateGroupList() {
@@ -99,18 +121,29 @@ export default {
         },
         deleteGroup() {
             this.axios
-                .delete(`/api/groups/${this.form.id}`).then(() => {
+                .delete(`/api/groups/${this.form.uuid}`).then(() => {
                 this.onGroupRowUnselected();
                 this.updateGroupList();
             })
         },
         updateGroupUserList() {
             this.axios
-                .get(`api/groups/${this.form.id}/users`)
+                .get(`api/groups/${this.form.uuid}/users`)
                 .then(response => {
                     this.groupUsers = response.data;
             })
         },
+    },
+    validations () {
+        return {
+            form:{
+                name: {
+                    required,
+                    minLengthValue: minLength(3),
+                    maxLengthValue: maxLength(20)
+                }
+            }
+        }
     }
 }
 </script>

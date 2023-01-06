@@ -37,7 +37,16 @@
                                         v-model="form.name"
                                         placeholder="Enter name"
                                         required
+                                        @input="v$.form.name.$touch()"
                                     ></b-form-input>
+                                    <b-form-invalid-feedback force-show="true"
+                                                             v-for="(error, index) of v$.form.name.$errors" :key="index">
+                                        {{ error.$message }}
+                                    </b-form-invalid-feedback>
+                                    <b-form-invalid-feedback force-show="true"
+                                                             v-for="(error, index) of responseErrors.name" :key="index">
+                                        {{ error }}
+                                    </b-form-invalid-feedback>
                                 </b-form-group>
                                 <b-form-group
                                     id="input-group-1"
@@ -50,7 +59,16 @@
                                         placeholder="Enter email"
                                         required
                                         type="email"
+                                        @input="v$.form.email.$touch()"
                                     ></b-form-input>
+                                    <b-form-invalid-feedback force-show="true"
+                                                             v-for="(error, index) of v$.form.email.$errors" :key="index">
+                                        {{ error.$message }}
+                                    </b-form-invalid-feedback>
+                                    <b-form-invalid-feedback force-show="true"
+                                                             v-for="(error, index) of responseErrors.email" :key="index">
+                                        {{ error }}
+                                    </b-form-invalid-feedback>
                                 </b-form-group>
                                 <b-form-group
                                     id="input-group-3"
@@ -63,9 +81,40 @@
                                         v-model="form.password"
                                         placeholder=""
                                         type="password"
+                                        @input="v$.form.password.$touch()"
                                     ></b-form-input>
+                                    <b-form-invalid-feedback force-show="true"
+                                                             v-for="(error, index) of v$.form.password.$errors" :key="index">
+                                        {{ error.$message }}
+                                    </b-form-invalid-feedback>
+                                    <b-form-invalid-feedback force-show="true"
+                                                             v-for="(error, index) of responseErrors.password" :key="index">
+                                        {{ error }}
+                                    </b-form-invalid-feedback>
                                 </b-form-group>
-                                <b-button type="submit" variant="primary">Save changes</b-button>
+                                <b-form-group
+                                    id="input-group-4"
+                                    description=""
+                                    label="Confirm password:"
+                                    label-for="input-4"
+                                >
+                                    <b-form-input
+                                        id="input-4"
+                                        v-model="form.password_confirmation"
+                                        placeholder=""
+                                        type="password"
+                                        @input="v$.form.password_confirmation.$touch()"
+                                    ></b-form-input>
+                                    <b-form-invalid-feedback force-show="true"
+                                                             v-for="(error, index) of v$.form.password_confirmation.$errors" :key="index">
+                                        {{ error.$message }}
+                                    </b-form-invalid-feedback>
+                                    <b-form-invalid-feedback force-show="true"
+                                                             v-for="(error, index) of responseErrors.password_confirmation" :key="index">
+                                        {{ error }}
+                                    </b-form-invalid-feedback>
+                                </b-form-group>
+                                <b-button :disabled="v$.form.$invalid" type="submit" variant="primary">Save changes</b-button>
                             </b-form>
                         </div>
                     </b-card>
@@ -126,14 +175,26 @@ th {
 </style>
 
 <script>
+import useVuelidate from "@vuelidate/core";
+import {email, helpers, maxLength, minLength, or, required, sameAs} from "@vuelidate/validators";
+
 export default {
+    setup () {
+        return { v$: useVuelidate() }
+    },
     data() {
         return {
             users: [],
             fields: ['name'],
             showSelectableField: false,
             selected: [],
-            form: [],
+            form: {
+                name: '',
+                email: '',
+                password: '',
+                password_confirmation: ''
+            },
+            responseErrors: {},
             userGroups: [],
             availableGroups: [],
             isHidden: true
@@ -147,7 +208,7 @@ export default {
     computed: {
         filteredAvailableGroups() {
 
-            return this.availableGroups.filter(x => !this.userGroups.filter(y => y.id === x.id).length);
+            return this.availableGroups.filter(x => !this.userGroups.filter(y => y.uuid === x.uuid).length);
         }
     },
     methods: {
@@ -161,11 +222,14 @@ export default {
             this.isHidden = true;
         },
         updateUser() {
+            self = this
             this.axios
-                .patch(`/api/users/${this.form.id}`, this.form).then(() => {
+                .patch(`/api/users/${this.form.uuid}`, this.form).then(() => {
                 this.updateUserList();
-
-            })
+                self.responseErrors = {}
+            }).catch(function (error) {
+                if (error.response.status === 422)
+                    self.responseErrors = error.response.data.errors})
         },
         updateUserList() {
             this.axios
@@ -176,7 +240,7 @@ export default {
         },
         updateUserGroupList() {
             this.axios
-                .get(`api/users/${this.form.id}/groups`)
+                .get(`api/users/${this.form.uuid}/groups`)
                 .then(response => {
                     this.userGroups = response.data;
             })
@@ -191,21 +255,40 @@ export default {
         onUserGroupRowSelected(item) {
             this.userGroups = this.userGroups.filter(x => x !== item);
             this.axios
-                .delete(`/api/users/${this.form.id}/groups/${item.id}`).then(() => {
+                .delete(`/api/users/${this.form.uuid}/groups/${item.uuid}`).then(() => {
             })
         },
         onAvailableGroupRowSelected(item) {
             this.userGroups.push(item);
             this.axios
-                .put(`/api/users/${this.form.id}/groups/${item.id}`).then(() => {
+                .put(`/api/users/${this.form.uuid}/groups/${item.uuid}`).then(() => {
             })
         },
         deleteUser() {
             this.axios
-                .delete(`/api/users/${this.form.id}`).then(() => {
+                .delete(`/api/users/${this.form.uuid}`).then(() => {
                 this.onUserRowUnselected();
                 this.updateUserList();
             })
+        }
+    },
+    validations () {
+        return {
+            form:{
+                name: {
+                    required,
+                    minLengthValue: minLength(5),
+                    maxLengthValue: maxLength(20)
+                },
+                email: {required, email},
+                password: {minLengthValue: helpers.withMessage(`This field should be empty or at least 8 characters long `,
+                        or(minLength(8), maxLength(0)))},
+                password_confirmation: {
+                    sameAsPassword: helpers.withMessage(`Fields password and confirm password does not match`,
+                        sameAs(this.form.password)
+                    )
+                }
+            }
         }
     }
 }

@@ -8,9 +8,9 @@ use Illuminate\Http\Request;
 
 class GroupUserController extends Controller
 {
-    public function index($id)
+    public function index($uuid)
     {
-        $group = Group::find($id);
+        $group = Group::where('uuid',$uuid)->first();
         $users = $group->users()->get();
         return response()->json($users);
     }
