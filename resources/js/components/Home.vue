@@ -1,13 +1,15 @@
 <template>
     <div>
-        <h2 class="text-center">Welcome to Home Component</h2>
+        <h2 class="text-center">Welcome!</h2>
     </div>
 </template>
 
 <script>
 export default {
-    name: "Home"
+    name: "Home",
 }
+
+
 </script>
 
 <style scoped>
